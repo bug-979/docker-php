@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  php:
+    image: php74 #指定镜像名称，我这里用的是自己构建的
+    container_name: php74 #指定容器名
+    build:
+      context: ./php #dockerfile文件路径
+      dockerfile: Dockerfile #制定dockerfile文件名称
+    restart: always #用于指定容器重启策略的配置选项,可以确保容器在意外终止或Docker守护进程重启时能够自动恢复，保证应用程序的可用性和稳定性
+    ports:
+      - 9000:9000
+    environment:
+      TZ: Asia/Shanghai # 设置时区
+    tmpfs: /var/temp #上传临时文件夹
+    working_dir: /var/www # 工作目录，项目目录
+    volumes:
+      #程序运行目录
+      - ./src:/var/www
+      - ./php/php-ini-overrides.ini:/etc/php/7.4/fpm/conf.d/99-overrides.ini
+    stdin_open: true #相当于 run 命令中的 -d
+    tty: true # tty 相当于 run 命令中的 -i
+    networks: #配置网络
+      app_net:
+  mysql:
+    image: mysql:5.7
+    container_name: mysql57
+    ports:
+      - 3306:3306
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: '123456'
+      MYSQL_DATABASE: 'test'
+    privileged: true #容器会在特权模式下运行，并具有对主机系统的完全访问权限
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --max_allowed_packet=128M
+      --default-authentication-plugin=mysql_native_password
+      --sql-mode="NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+    working_dir: /var/lib/mysql
+    volumes:
+      - ./mysql/my.cnf:/etc/mysql/my.cnf
+      - ./mysql/data:/var/lib/mysql #挂载数据目录到本地
+      - ./mysql/log:/var/log/mysql
+    networks:
+      app_net:
+  redis:
+    container_name: redis
+    image: 'redis:alpine'
+    ports:
+      - "6379:6379"
+    command: redis-server /usr/local/etc/redis/redis.conf # 执行命令启动redis
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      app_net:
+  nginx:
+    container_name: nginx
+    image: 'nginx:alpine'
+    restart: always
+    ports:
+      - 8967:80
+    depends_on:
+      - php
+    environment:
+      TZ: Asia/Shanghai
+    working_dir: /var/www
+    volumes_from:
+      - php
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/log:/etc/nginx/log
+    networks:
+      app_net:
+networks:
+  app_net:
+    driver: bridge
