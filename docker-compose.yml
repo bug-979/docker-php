@@ -14,6 +14,7 @@ services:
       TZ: Asia/Shanghai # 设置时区
     tmpfs: /var/temp #上传临时文件夹
     working_dir: /var/www # 工作目录，项目目录
+    privileged: true
     volumes:
       #程序运行目录
       - ./src:/var/www
