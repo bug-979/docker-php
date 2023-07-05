@@ -7,6 +7,7 @@ RUN apt-get update; \
         php7.4-bcmath \ 
         php7.4-redis \
         php7.4-mysqli \
+        php7.4-pdo_mysql \
         php7.4-xdebug \
         php7.4-gd
 RUN apt-get clean 
